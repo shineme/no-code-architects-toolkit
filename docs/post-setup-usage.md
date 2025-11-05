@@ -893,6 +893,32 @@ curl -X POST "$BASE_URL/v1/code/execute/python" \
 2. n8n/Make 工作流收到 webhook 后读取 `response` 字段中的文件地址或文字结果。
 3. 后续步骤可以写入 Google Sheet、推送 Slack、调用自建 API、触发下一个视频处理任务等。
 
+### 4.5 长视频批量拆条 & 快速发布
+
+1. **切片**：调用 `/v1/video/split` 根据时间点拆出多个片段，返回数组形式的 `file_url`。
+2. **封面生成**：遍历切片结果，对每个片段调用 `/v1/video/thumbnail` 生成缩略图并保存到 OSS。
+3. **自动打标签**：对每个切片调用 `/v1/media/metadata` 获取分辨率、比特率、时长，用于生成标题/描述。
+4. **一键发布**：将片段与缩略图通过 `/v1/s3/upload` 推送到对象存储，返回的公网 URL 可直接用于社交平台上传。
+
+> 小技巧：在 `id` 中携带 `split-index` 等自定义字段，方便 webhook 识别属于哪一个子片段。
+
+### 4.6 全量内容再利用（抓取 → 多格式 → 字幕）
+
+1. **抓源**：使用 `/v1/BETA/media/download` 把长视频从 YouTube/Vimeo 等平台拉取到本地/云存储。
+2. **格式规范化**：用 `/v1/media/convert` 转成统一分辨率与编码，确保后续流程兼容。
+3. **音频拆分**：调用 `/v1/media/convert/mp3` 提取播客音频版本，供 RSS 或语音平台使用。
+4. **转写+翻译**：用 `/v1/media/transcribe` 获取文字稿与时间轴，必要时设置 `task: "translate"` 生成多语言版本。
+5. **高级字幕**：将文字结果交给 `/v1/media/generate/ass` 制作带样式的字幕，再通过 `/v1/video/caption` 烧制到视频。
+6. **终端分发**：最后把所有产物（标准视频、字幕、音频、文案）分别上传至 `/v1/s3/upload`，统一沉淀在 OSS/COS/MinIO。
+
+### 4.7 多语言字幕 & 样式 A/B 流水线
+
+1. **基础转写**：使用 `/v1/media/transcribe`，指定 `response_type: "cloud"` 与 `include_srt: true`，取得原语言字幕与时间轴。
+2. **自动翻译**：再次调用同一接口（或使用翻译模式）获取目标语言字幕文本。
+3. **双版本字幕生成**：分别调用 `/v1/media/generate/ass` 生成不同风格（例如 `karaoke` vs `word_by_word`）的字幕文件，并在 `settings` 内调整字体、颜色、位置。
+4. **批量烧制**：对每种风格调用 `/v1/video/caption`，得到多个风格化的视频版本。
+5. **效果评估**：通过 `/v1/media/metadata` 获取每个版本的码率/大小确认平台兼容，再用 `/v1/s3/upload` 上传并统计 A/B 数据。
+
 ---
 
 ## 5. 进阶玩法示例
