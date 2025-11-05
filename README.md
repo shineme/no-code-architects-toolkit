@@ -286,6 +286,16 @@ You can more easily control performance and cost this way, but requires more tec
 
 - [General Docker Compose Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docker-compose.md)
 
+### VPS Deployment with Tencent Cloud COS / Alibaba Cloud OSS (中文指南)
+
+Complete guides for deploying on your own VPS with Chinese cloud storage providers:
+
+- **[📑 中文部署文档索引](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/README-CN.md)** - Complete documentation index with quick links
+- **[🚀 快速开始指南（中文）](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/quick-start-cn.md)** - 5-minute Docker deployment guide
+- **[📖 完整VPS部署指南（中文）](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/vps-deployment-guide-cn.md)** - Detailed guide covering Docker/source deployment, performance requirements, and cloud storage configuration
+- **[⚙️ 环境变量配置示例（中文）](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/env-examples-cn.md)** - Configuration examples for Tencent Cloud COS and Alibaba Cloud OSS
+- **[🤖 一键部署脚本说明（中文）](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/scripts/README-CN.md)** - Automated deployment scripts for Tencent Cloud and Alibaba Cloud
+
 ### Local Development with MinIO and n8n
 
 For local development with integrated S3-compatible storage and workflow automation:
