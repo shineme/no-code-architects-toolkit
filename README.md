@@ -33,6 +33,10 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 ---
 
+## Documentation Highlights
+
+- [项目搭建完成后的用法总览（中文）](docs/post-setup-usage.md)
+
 ## API Endpoints
 
 Each endpoint is supported by robust payload validation and detailed API documentation to facilitate easy integration and usage.
