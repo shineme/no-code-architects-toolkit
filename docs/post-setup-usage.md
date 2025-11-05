@@ -2,6 +2,13 @@
 
 本文整理了 No-Code Architects Toolkit API 在完成部署后的全部核心能力，帮助你快速了解可以做什么、应该调用哪些接口、以及如何组合这些能力来构建自动化流程或内容生产流水线。建议在开始之前确保服务已经成功启动并且能够通过 `X-API-Key` 访问。
 
+> **建议：** 先在终端中设置通用变量，后续示例可直接复制粘贴。
+> ```bash
+> BASE_URL="http://localhost:8080"
+> API_KEY="your_api_key"
+> ```
+> 大多数接口为 `POST` 请求，请同时带上 `-H "Content-Type: application/json"` 与 `-H "X-API-Key: $API_KEY"` 头部。
+
 ---
 
 ## 1. 环境确认与健康检查
@@ -12,6 +19,44 @@
 | [`/v1/toolkit/authenticate`](toolkit/authenticate.md) | 校验 `X-API-Key` 是否有效 | 在前端或自动化工具中快速验证密钥配置 |
 | [`/v1/toolkit/job/status`](toolkit/job_status.md) | 根据 `job_id` 查询单个任务状态 | 轮询异步任务进度；失败重试时获取错误详情 |
 | [`/v1/toolkit/jobs/status`](toolkit/jobs_status.md) | 批量查询时间范围内的任务列表 | 创建看板或可视化监控；统计处理量 |
+
+#### 对应 cURL 示例
+
+**GET `/v1/toolkit/test`**
+
+```bash
+curl -X GET "$BASE_URL/v1/toolkit/test" \
+  -H "X-API-Key: $API_KEY"
+```
+
+**GET `/v1/toolkit/authenticate`**
+
+```bash
+curl -X GET "$BASE_URL/v1/toolkit/authenticate" \
+  -H "X-API-Key: $API_KEY"
+```
+
+**POST `/v1/toolkit/job/status`**
+
+```bash
+curl -X POST "$BASE_URL/v1/toolkit/job/status" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "job_id": "YOUR_JOB_ID"
+  }'
+```
+
+**POST `/v1/toolkit/jobs/status`**
+
+```bash
+curl -X POST "$BASE_URL/v1/toolkit/jobs/status" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "since_seconds": 3600
+  }'
+```
 
 > **提示**：所有接口默认支持 webhook。只要在请求体中携带 `webhook_url`，任务会异步执行并在完成后回调你的服务。
 
@@ -25,6 +70,24 @@
 | --- | --- | --- |
 | [`/v1/audio/concatenate`](audio/concatenate.md) | 将多段音频合并为单一文件 | 制作播客合集、把多段配音拼接成成片素材 |
 
+#### 对应 cURL 示例
+
+**POST `/v1/audio/concatenate`**
+
+```bash
+curl -X POST "$BASE_URL/v1/audio/concatenate" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "audio_urls": [
+      {"audio_url": "https://example.com/intro.mp3"},
+      {"audio_url": "https://example.com/outro.mp3"}
+    ],
+    "webhook_url": "https://example.com/webhook",
+    "id": "audio-merge-001"
+  }'
+```
+
 ### 2.2 视频处理
 
 | Endpoint | 功能摘要 | 常见玩法 |
@@ -36,6 +99,105 @@
 | [`/v1/video/thumbnail`](video/thumbnail.md) | 抽取指定时间帧的缩略图 | 批量生成封面、用于社交媒体首图 |
 | [`/v1/video/caption`](video/caption_video.md) | 为视频烧制 SRT/ASS 字幕并输出新文件 | 制作字幕版短视频、生成多语言版本 |
 
+#### 对应 cURL 示例
+
+**POST `/v1/video/concatenate`**
+
+```bash
+curl -X POST "$BASE_URL/v1/video/concatenate" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "video_urls": [
+      {"video_url": "https://example.com/clip1.mp4"},
+      {"video_url": "https://example.com/clip2.mp4"}
+    ],
+    "webhook_url": "https://example.com/webhook",
+    "id": "video-merge-001"
+  }'
+```
+
+**POST `/v1/video/cut`**
+
+```bash
+curl -X POST "$BASE_URL/v1/video/cut" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "video_url": "https://example.com/source.mp4",
+    "cuts": [
+      {"start": "00:00:05.000", "end": "00:00:15.000"},
+      {"start": "00:00:30.000", "end": "00:00:45.000"}
+    ],
+    "video_codec": "libx264",
+    "audio_codec": "aac",
+    "webhook_url": "https://example.com/webhook",
+    "id": "video-cut-001"
+  }'
+```
+
+**POST `/v1/video/trim`**
+
+```bash
+curl -X POST "$BASE_URL/v1/video/trim" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "video_url": "https://example.com/source.mp4",
+    "start": "00:00:10.000",
+    "end": "00:01:00.000",
+    "webhook_url": "https://example.com/webhook",
+    "id": "video-trim-001"
+  }'
+```
+
+**POST `/v1/video/split`**
+
+```bash
+curl -X POST "$BASE_URL/v1/video/split" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "video_url": "https://example.com/webinar.mp4",
+    "splits": [
+      {"start": "00:00:00.000", "end": "00:00:30.000"},
+      {"start": "00:00:30.000", "end": "00:01:00.000"}
+    ],
+    "webhook_url": "https://example.com/webhook",
+    "id": "video-split-001"
+  }'
+```
+
+**POST `/v1/video/thumbnail`**
+
+```bash
+curl -X POST "$BASE_URL/v1/video/thumbnail" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "video_url": "https://example.com/source.mp4",
+    "second": 12.5,
+    "id": "video-thumb-001"
+  }'
+```
+
+**POST `/v1/video/caption`**
+
+```bash
+curl -X POST "$BASE_URL/v1/video/caption" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "video_url": "https://example.com/source.mp4",
+    "srt": "1\\n00:00:00,000 --> 00:00:03,000\\nHello world!\\n",
+    "options": [
+      {"option": "-vf", "value": "scale=1280:720"}
+    ],
+    "webhook_url": "https://example.com/webhook",
+    "id": "video-caption-001"
+  }'
+```
+
 ### 2.3 图像与网页
 
 | Endpoint | 功能摘要 | 常见玩法 |
@@ -43,12 +205,90 @@
 | [`/v1/image/convert/video`](image/convert/image_to_video.md) | 单张图片生成带镜头运动的视频 | 将海报/宣传图转成动效视频、制作背景循环视频 |
 | [`/v1/image/screenshot/webpage`](image/screenshot_webpage.md) | 通过 Playwright 截取网页 | 生成网站/落地页截图、制作 UI 素材、记录网页变更 |
 
+#### 对应 cURL 示例
+
+**POST `/v1/image/convert/video`**
+
+```bash
+curl -X POST "$BASE_URL/v1/image/convert/video" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "image_url": "https://example.com/poster.jpg",
+    "length": 8,
+    "frame_rate": 30,
+    "zoom_speed": 5,
+    "webhook_url": "https://example.com/webhook",
+    "id": "image-video-001"
+  }'
+```
+
+**POST `/v1/image/screenshot/webpage`**
+
+```bash
+curl -X POST "$BASE_URL/v1/image/screenshot/webpage" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "url": "https://example.com",
+    "viewport_width": 1280,
+    "viewport_height": 720,
+    "full_page": true,
+    "format": "png",
+    "delay": 1000,
+    "webhook_url": "https://example.com/webhook",
+    "id": "screenshot-001"
+  }'
+```
+
 ### 2.4 字幕与文本
 
 | Endpoint | 功能摘要 | 常见玩法 |
 | --- | --- | --- |
 | [`/v1/media/media_transcribe`](media/media_transcribe.md) | 调用 Whisper 转写/翻译音视频 | 生成逐字稿、制作字幕、跨语言翻译 |
 | [`/v1/media/generate/ass`](media/generate_ass.md) | 基于原始媒体生成富样式 ASS 字幕 | 运营侧制作卡拉 OK 高亮字幕、配合 caption 接口烧制成片 |
+
+#### 对应 cURL 示例
+
+**POST `/v1/media/transcribe`**
+
+```bash
+curl -X POST "$BASE_URL/v1/media/transcribe" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "media_url": "https://example.com/interview.mp4",
+    "task": "transcribe",
+    "include_text": true,
+    "include_srt": true,
+    "response_type": "cloud",
+    "language": "en",
+    "webhook_url": "https://example.com/webhook",
+    "id": "transcribe-001"
+  }'
+```
+
+**POST `/v1/media/generate/ass`**
+
+```bash
+curl -X POST "$BASE_URL/v1/media/generate/ass" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "media_url": "https://example.com/interview.mp4",
+    "canvas_width": 1920,
+    "canvas_height": 1080,
+    "language": "en",
+    "settings": {
+      "font_family": "Arial",
+      "font_size": 48,
+      "line_color": "&H00FFFFFF",
+      "style": "karaoke"
+    },
+    "webhook_url": "https://example.com/webhook",
+    "id": "ass-style-001"
+  }'
+```
 
 ### 2.5 通用媒体处理
 
@@ -61,12 +301,124 @@
 | [`/v1/media/silence`](media/silence.md) | 检测静音片段 | 自动找出剪辑点、生成 B-roll 切换节点 |
 | [`/v1/media/feedback`](media/feedback.md) | 生成带有 UI 的反馈页面 | 收集团队/客户对媒体的意见 |
 
+#### 对应 cURL 示例
+
+**POST `/v1/media/convert`**
+
+```bash
+curl -X POST "$BASE_URL/v1/media/convert" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "media_url": "https://example.com/source.mov",
+    "format": "mp4",
+    "video_codec": "libx264",
+    "audio_codec": "aac",
+    "webhook_url": "https://example.com/webhook",
+    "id": "convert-001"
+  }'
+```
+
+**POST `/v1/media/convert/mp3`**
+
+```bash
+curl -X POST "$BASE_URL/v1/media/convert/mp3" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "media_url": "https://example.com/interview.mp4",
+    "bitrate": "192k",
+    "sample_rate": 44100,
+    "webhook_url": "https://example.com/webhook",
+    "id": "mp3-001"
+  }'
+```
+
+**POST `/v1/BETA/media/download`**
+
+```bash
+curl -X POST "$BASE_URL/v1/BETA/media/download" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "media_url": "https://www.youtube.com/watch?v=VIDEO_ID",
+    "cloud_upload": true,
+    "webhook_url": "https://example.com/webhook",
+    "id": "download-001"
+  }'
+```
+
+**POST `/v1/media/metadata`**
+
+```bash
+curl -X POST "$BASE_URL/v1/media/metadata" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "media_url": "https://example.com/source.mp4",
+    "id": "metadata-001"
+  }'
+```
+
+**POST `/v1/media/silence`**
+
+```bash
+curl -X POST "$BASE_URL/v1/media/silence" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "media_url": "https://example.com/podcast.mp3",
+    "duration": 0.5,
+    "noise": "-35dB",
+    "mono": true,
+    "webhook_url": "https://example.com/webhook",
+    "id": "silence-001"
+  }'
+```
+
+**GET `/v1/media/feedback`**
+
+```bash
+curl -L "$BASE_URL/v1/media/feedback"
+```
+
 ### 2.6 云存储与交付
 
 | Endpoint | 功能摘要 | 常见玩法 |
 | --- | --- | --- |
 | [`/v1/s3/upload`](s3/upload.md) | 直接从 URL 上传到 S3 兼容存储 | 将处理结果推送到 COS/OSS/MinIO；自动化备份 |
 | `/gdrive-upload` | 将远程文件分块上传至 Google Drive（需要 `GDRIVE_USER` + `GCP_SA_CREDENTIALS`） | 与 Google Workspace 协同、产出物直接进团队盘 |
+
+#### 对应 cURL 示例
+
+**POST `/v1/s3/upload`**
+
+```bash
+curl -X POST "$BASE_URL/v1/s3/upload" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "file_url": "https://example.com/output.mp4",
+    "filename": "campaign-final.mp4",
+    "public": true
+  }'
+```
+
+**POST `/gdrive-upload`**
+
+```bash
+curl -X POST "$BASE_URL/gdrive-upload" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "file_url": "https://example.com/output.mp4",
+    "filename": "campaign-final.mp4",
+    "folder_id": "YOUR_DRIVE_FOLDER_ID",
+    "chunk_size": 5242880,
+    "webhook_url": "https://example.com/webhook",
+    "id": "gdrive-001"
+  }'
+```
 
 ### 2.7 自动化工具箱
 
@@ -77,6 +429,62 @@
 
 > `/audio-mixing` 尚无独立文档，功能由 `services/audio_mixing.py` 提供，支持 webhook、云端上传。
 
+#### 对应 cURL 示例
+
+**POST `/v1/ffmpeg/compose`**
+
+```bash
+curl -X POST "$BASE_URL/v1/ffmpeg/compose" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "inputs": [
+      {
+        "file_url": "https://example.com/clip.mp4",
+        "options": [
+          {"option": "-ss", "argument": 5},
+          {"option": "-t", "argument": 15}
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "options": [
+          {"option": "-c:v", "argument": "libx264"},
+          {"option": "-preset", "argument": "medium"},
+          {"option": "-crf", "argument": 23}
+        ]
+      }
+    ],
+    "global_options": [
+      {"option": "-y"}
+    ],
+    "metadata": {
+      "thumbnail": true,
+      "duration": true
+    },
+    "webhook_url": "https://example.com/webhook",
+    "id": "ffmpeg-001"
+  }'
+```
+
+**POST `/audio-mixing`**
+
+```bash
+curl -X POST "$BASE_URL/audio-mixing" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "video_url": "https://example.com/raw-video.mp4",
+    "audio_url": "https://example.com/voiceover.mp3",
+    "video_vol": 80,
+    "audio_vol": 100,
+    "output_length": "video",
+    "webhook_url": "https://example.com/webhook",
+    "id": "audio-mix-001"
+  }'
+```
+
 ### 2.8 开发者与运维能力
 
 | Endpoint / 功能 | 功能摘要 | 常见玩法 |
@@ -84,6 +492,23 @@
 | [`/v1/code/execute/python`](code/execute/execute_python.md) | 远程安全地执行 Python 代码，返回标准输出和错误输出 | 构建自定义算子、在工作流中运行小型脚本 |
 | 队列模式（`queue_task_wrapper`） | 无需自己管理后台任务队列，内置同步 / 异步 / Cloud Run 托管 | 避免请求超时、提升长任务稳定性 |
 | Webhook 回调 | 任意接口加入 `webhook_url` 即启用 | 与 n8n/Make/Zapier 整合，任务完成自动触发下一步 |
+
+#### 对应 cURL 示例
+
+**POST `/v1/code/execute/python`**
+
+```bash
+curl -X POST "$BASE_URL/v1/code/execute/python" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "code": "print(\"Hello from Toolkit\")\nreturn 42",
+    "timeout": 60,
+    "id": "python-001"
+  }'
+```
+
+> 队列模式与 Webhook 回调为框架特性，直接在任意任务请求体中附加 `webhook_url`、`id` 等字段即可，无需单独的接口调用。
 
 ---
 
@@ -129,6 +554,106 @@
 | `/media-to-mp3` | 媒体转 MP3 | [`/v1/media/convert/mp3`](media/convert/media_to_mp3.md) |
 | `/transcribe-media` | 音视频转写 | [`/v1/media/media_transcribe`](media/media_transcribe.md) |
 | `/authenticate` (GET) | 校验 API Key | [`/v1/toolkit/authenticate`](toolkit/authenticate.md) |
+
+#### 对应 cURL 示例（Legacy）
+
+**POST `/caption-video`**
+
+```bash
+curl -X POST "$BASE_URL/caption-video" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "video_url": "https://example.com/source.mp4",
+    "srt": "1\\n00:00:00,000 --> 00:00:03,000\\nHello world!\\n",
+    "options": [
+      {"option": "-vf", "value": "scale=1080:-2"}
+    ],
+    "webhook_url": "https://example.com/webhook",
+    "id": "legacy-caption-001"
+  }'
+```
+
+**POST `/combine-videos`**
+
+```bash
+curl -X POST "$BASE_URL/combine-videos" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "video_urls": [
+      {"video_url": "https://example.com/clip1.mp4"},
+      {"video_url": "https://example.com/clip2.mp4"}
+    ],
+    "webhook_url": "https://example.com/webhook",
+    "id": "legacy-combine-001"
+  }'
+```
+
+**POST `/extract-keyframes`**
+
+```bash
+curl -X POST "$BASE_URL/extract-keyframes" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "video_url": "https://example.com/source.mp4",
+    "webhook_url": "https://example.com/webhook",
+    "id": "legacy-keyframes-001"
+  }'
+```
+
+**POST `/image-to-video`**
+
+```bash
+curl -X POST "$BASE_URL/image-to-video" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "image_url": "https://example.com/poster.jpg",
+    "length": 6,
+    "frame_rate": 30,
+    "zoom_speed": 4,
+    "webhook_url": "https://example.com/webhook",
+    "id": "legacy-image-video-001"
+  }'
+```
+
+**POST `/media-to-mp3`**
+
+```bash
+curl -X POST "$BASE_URL/media-to-mp3" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "media_url": "https://example.com/interview.mp4",
+    "bitrate": "160k",
+    "webhook_url": "https://example.com/webhook",
+    "id": "legacy-mp3-001"
+  }'
+```
+
+**POST `/transcribe-media`**
+
+```bash
+curl -X POST "$BASE_URL/transcribe-media" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{
+    "media_url": "https://example.com/interview.mp4",
+    "output": "srt",
+    "max_chars": 56,
+    "webhook_url": "https://example.com/webhook",
+    "id": "legacy-transcribe-001"
+  }'
+```
+
+**GET `/authenticate`**
+
+```bash
+curl -X GET "$BASE_URL/authenticate" \
+  -H "X-API-Key: $API_KEY"
+```
 
 > 兼容接口同样支持 `webhook_url`、`id` 等参数，返回结构也遵循队列包装后的统一格式。
 
