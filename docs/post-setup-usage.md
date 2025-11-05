@@ -9,6 +9,8 @@
 > ```
 > 大多数接口为 `POST` 请求，请同时带上 `-H "Content-Type: application/json"` 与 `-H "X-API-Key: $API_KEY"` 头部。
 
+所有同步接口（未传 `webhook_url`）会直接返回包含结果的 200 响应；当传入 `webhook_url` 时接口会返回 202 状态，并在后台完成处理后将最终结果以 webhook 回调或 `/v1/toolkit/job/status` 查询方式返回。
+
 ---
 
 ## 1. 环境确认与健康检查
@@ -20,13 +22,29 @@
 | [`/v1/toolkit/job/status`](toolkit/job_status.md) | 根据 `job_id` 查询单个任务状态 | 轮询异步任务进度；失败重试时获取错误详情 |
 | [`/v1/toolkit/jobs/status`](toolkit/jobs_status.md) | 批量查询时间范围内的任务列表 | 创建看板或可视化监控；统计处理量 |
 
-#### 对应 cURL 示例
+#### 对应 cURL 与响应示例
 
 **GET `/v1/toolkit/test`**
 
 ```bash
 curl -X GET "$BASE_URL/v1/toolkit/test" \
   -H "X-API-Key: $API_KEY"
+```
+
+```json
+{
+  "endpoint": "/v1/toolkit/test",
+  "code": 200,
+  "job_id": "0f6e6c19-2b54-4b40-9ef2-9fb2c2c084f3",
+  "message": "success",
+  "response": "https://storage.example.com/jobs/0f6e6c19/test-success.txt",
+  "pid": 12345,
+  "queue_id": 140250100112,
+  "run_time": 0.214,
+  "queue_time": 0,
+  "total_time": 0.214,
+  "build_number": "204"
+}
 ```
 
 **GET `/v1/toolkit/authenticate`**
@@ -36,6 +54,21 @@ curl -X GET "$BASE_URL/v1/toolkit/authenticate" \
   -H "X-API-Key: $API_KEY"
 ```
 
+```json
+{
+  "endpoint": "/authenticate",
+  "code": 200,
+  "job_id": "9ed20b62-0df6-468e-a287-3f0d8f9bc206",
+  "message": "success",
+  "response": "Authorized",
+  "run_time": 0.002,
+  "queue_time": 0,
+  "total_time": 0.002,
+  "queue_id": 140250100112,
+  "build_number": "204"
+}
+```
+
 **POST `/v1/toolkit/job/status`**
 
 ```bash
@@ -43,8 +76,31 @@ curl -X POST "$BASE_URL/v1/toolkit/job/status" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $API_KEY" \
   -d '{
-    "job_id": "YOUR_JOB_ID"
+    "job_id": "0f6e6c19-2b54-4b40-9ef2-9fb2c2c084f3"
   }'
+```
+
+```json
+{
+  "job_status": "done",
+  "job_id": "0f6e6c19-2b54-4b40-9ef2-9fb2c2c084f3",
+  "queue_id": 140250100112,
+  "process_id": 12345,
+  "response": {
+    "endpoint": "/v1/toolkit/test",
+    "code": 200,
+    "job_id": "0f6e6c19-2b54-4b40-9ef2-9fb2c2c084f3",
+    "response": "https://storage.example.com/jobs/0f6e6c19/test-success.txt",
+    "message": "success",
+    "pid": 12345,
+    "queue_id": 140250100112,
+    "run_time": 0.214,
+    "queue_time": 0,
+    "total_time": 0.214,
+    "queue_length": 0,
+    "build_number": "204"
+  }
+}
 ```
 
 **POST `/v1/toolkit/jobs/status`**
@@ -58,11 +114,18 @@ curl -X POST "$BASE_URL/v1/toolkit/jobs/status" \
   }'
 ```
 
-> **提示**：所有接口默认支持 webhook。只要在请求体中携带 `webhook_url`，任务会异步执行并在完成后回调你的服务。
+```json
+{
+  "0f6e6c19-2b54-4b40-9ef2-9fb2c2c084f3": "done",
+  "b56df033-34a5-4093-b0f8-8f97d0a6451a": "running"
+}
+```
 
 ---
 
 ## 2. 功能清单（按场景分类）
+
+> 所有以下示例均默认带上 `-H "Content-Type: application/json"` 与 `-H "X-API-Key: $API_KEY"` 头部。若示例包含 `webhook_url`，同步响应会是 `202 processing`，示例中将附上即时响应与最终回调示例。去掉 `webhook_url` 即可改为同步 200 响应。
 
 ### 2.1 音频处理
 
@@ -70,14 +133,10 @@ curl -X POST "$BASE_URL/v1/toolkit/jobs/status" \
 | --- | --- | --- |
 | [`/v1/audio/concatenate`](audio/concatenate.md) | 将多段音频合并为单一文件 | 制作播客合集、把多段配音拼接成成片素材 |
 
-#### 对应 cURL 示例
-
 **POST `/v1/audio/concatenate`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/audio/concatenate" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "audio_urls": [
       {"audio_url": "https://example.com/intro.mp3"},
@@ -86,6 +145,42 @@ curl -X POST "$BASE_URL/v1/audio/concatenate" \
     "webhook_url": "https://example.com/webhook",
     "id": "audio-merge-001"
   }'
+```
+
+即时响应：
+
+```json
+{
+  "code": 202,
+  "id": "audio-merge-001",
+  "job_id": "a9cb28e5-8222-4ef2-8513-0e45c8482f6a",
+  "message": "processing",
+  "pid": 12345,
+  "queue_id": 140250100112,
+  "queue_length": 0,
+  "max_queue_length": "unlimited",
+  "build_number": "204"
+}
+```
+
+任务完成（webhook 回调或 `/v1/toolkit/job/status`）示例：
+
+```json
+{
+  "endpoint": "/v1/audio/concatenate",
+  "code": 200,
+  "id": "audio-merge-001",
+  "job_id": "a9cb28e5-8222-4ef2-8513-0e45c8482f6a",
+  "response": "https://storage.example.com/outputs/audio/audio-merge-001.mp3",
+  "message": "success",
+  "pid": 12345,
+  "queue_id": 140250100112,
+  "run_time": 8.432,
+  "queue_time": 0.731,
+  "total_time": 9.163,
+  "queue_length": 0,
+  "build_number": "204"
+}
 ```
 
 ### 2.2 视频处理
@@ -99,14 +194,10 @@ curl -X POST "$BASE_URL/v1/audio/concatenate" \
 | [`/v1/video/thumbnail`](video/thumbnail.md) | 抽取指定时间帧的缩略图 | 批量生成封面、用于社交媒体首图 |
 | [`/v1/video/caption`](video/caption_video.md) | 为视频烧制 SRT/ASS 字幕并输出新文件 | 制作字幕版短视频、生成多语言版本 |
 
-#### 对应 cURL 示例
-
 **POST `/v1/video/concatenate`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/video/concatenate" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "video_urls": [
       {"video_url": "https://example.com/clip1.mp4"},
@@ -117,12 +208,27 @@ curl -X POST "$BASE_URL/v1/video/concatenate" \
   }'
 ```
 
+任务完成示例：
+
+```json
+{
+  "endpoint": "/v1/video/concatenate",
+  "code": 200,
+  "id": "video-merge-001",
+  "job_id": "f1e3a6a2-5b87-4e02-8f4a-9c8672f356ce",
+  "response": "https://storage.example.com/outputs/video/video-merge-001.mp4",
+  "message": "success",
+  "run_time": 42.517,
+  "queue_time": 1.024,
+  "total_time": 43.541,
+  "queue_length": 0
+}
+```
+
 **POST `/v1/video/cut`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/video/cut" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "video_url": "https://example.com/source.mp4",
     "cuts": [
@@ -136,12 +242,26 @@ curl -X POST "$BASE_URL/v1/video/cut" \
   }'
 ```
 
+Webhook 回调：
+
+```json
+{
+  "endpoint": "/v1/video/cut",
+  "code": 200,
+  "id": "video-cut-001",
+  "job_id": "0f2f84c6-5af0-4c43-996c-2780c7568cf6",
+  "response": "https://storage.example.com/outputs/video/video-cut-001.mp4",
+  "message": "success",
+  "run_time": 18.902,
+  "queue_time": 0.63,
+  "total_time": 19.532
+}
+```
+
 **POST `/v1/video/trim`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/video/trim" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "video_url": "https://example.com/source.mp4",
     "start": "00:00:10.000",
@@ -151,12 +271,21 @@ curl -X POST "$BASE_URL/v1/video/trim" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/video/trim",
+  "code": 200,
+  "id": "video-trim-001",
+  "job_id": "1dcb635b-3a4f-4be3-b5c3-12b0ce7b58d8",
+  "response": "https://storage.example.com/outputs/video/video-trim-001.mp4",
+  "message": "success"
+}
+```
+
 **POST `/v1/video/split`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/video/split" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "video_url": "https://example.com/webinar.mp4",
     "splits": [
@@ -168,12 +297,24 @@ curl -X POST "$BASE_URL/v1/video/split" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/video/split",
+  "code": 200,
+  "id": "video-split-001",
+  "job_id": "d731f62f-5a58-4725-9a32-7f75ff8d4e21",
+  "response": [
+    {"file_url": "https://storage.example.com/outputs/video/video-split-001_part1.mp4"},
+    {"file_url": "https://storage.example.com/outputs/video/video-split-001_part2.mp4"}
+  ],
+  "message": "success"
+}
+```
+
 **POST `/v1/video/thumbnail`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/video/thumbnail" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "video_url": "https://example.com/source.mp4",
     "second": 12.5,
@@ -181,12 +322,21 @@ curl -X POST "$BASE_URL/v1/video/thumbnail" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/video/thumbnail",
+  "code": 200,
+  "id": "video-thumb-001",
+  "job_id": "6a4275c2-e30d-4c82-b9b9-02d332152755",
+  "response": "https://storage.example.com/outputs/video/video-thumb-001.png",
+  "message": "success"
+}
+```
+
 **POST `/v1/video/caption`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/video/caption" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "video_url": "https://example.com/source.mp4",
     "srt": "1\\n00:00:00,000 --> 00:00:03,000\\nHello world!\\n",
@@ -198,6 +348,17 @@ curl -X POST "$BASE_URL/v1/video/caption" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/video/caption",
+  "code": 200,
+  "id": "video-caption-001",
+  "job_id": "50f0ef85-a8bf-4bdf-8a2d-b14c6725dd88",
+  "response": "https://storage.example.com/outputs/video/video-caption-001.mp4",
+  "message": "success"
+}
+```
+
 ### 2.3 图像与网页
 
 | Endpoint | 功能摘要 | 常见玩法 |
@@ -205,14 +366,10 @@ curl -X POST "$BASE_URL/v1/video/caption" \
 | [`/v1/image/convert/video`](image/convert/image_to_video.md) | 单张图片生成带镜头运动的视频 | 将海报/宣传图转成动效视频、制作背景循环视频 |
 | [`/v1/image/screenshot/webpage`](image/screenshot_webpage.md) | 通过 Playwright 截取网页 | 生成网站/落地页截图、制作 UI 素材、记录网页变更 |
 
-#### 对应 cURL 示例
-
 **POST `/v1/image/convert/video`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/image/convert/video" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "image_url": "https://example.com/poster.jpg",
     "length": 8,
@@ -223,12 +380,21 @@ curl -X POST "$BASE_URL/v1/image/convert/video" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/image/convert/video",
+  "code": 200,
+  "id": "image-video-001",
+  "job_id": "f463f3a8-745e-40fc-8a65-1b8f95db08cc",
+  "response": "https://storage.example.com/outputs/video/image-video-001.mp4",
+  "message": "success"
+}
+```
+
 **POST `/v1/image/screenshot/webpage`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/image/screenshot/webpage" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "url": "https://example.com",
     "viewport_width": 1280,
@@ -241,6 +407,17 @@ curl -X POST "$BASE_URL/v1/image/screenshot/webpage" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/image/screenshot/webpage",
+  "code": 200,
+  "id": "screenshot-001",
+  "job_id": "36e7e9a5-4066-4c48-b2a0-d7d3c5f5d4f7",
+  "response": "https://storage.example.com/outputs/image/screenshot-001.png",
+  "message": "success"
+}
+```
+
 ### 2.4 字幕与文本
 
 | Endpoint | 功能摘要 | 常见玩法 |
@@ -248,14 +425,10 @@ curl -X POST "$BASE_URL/v1/image/screenshot/webpage" \
 | [`/v1/media/media_transcribe`](media/media_transcribe.md) | 调用 Whisper 转写/翻译音视频 | 生成逐字稿、制作字幕、跨语言翻译 |
 | [`/v1/media/generate/ass`](media/generate_ass.md) | 基于原始媒体生成富样式 ASS 字幕 | 运营侧制作卡拉 OK 高亮字幕、配合 caption 接口烧制成片 |
 
-#### 对应 cURL 示例
-
 **POST `/v1/media/transcribe`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/media/transcribe" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "media_url": "https://example.com/interview.mp4",
     "task": "transcribe",
@@ -268,12 +441,28 @@ curl -X POST "$BASE_URL/v1/media/transcribe" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/transcribe/media",
+  "code": 200,
+  "id": "transcribe-001",
+  "job_id": "c2cd90e5-0a12-4d8f-8470-557e77287cb4",
+  "response": {
+    "text": null,
+    "srt": null,
+    "segments": null,
+    "text_url": "https://storage.example.com/outputs/text/transcribe-001.txt",
+    "srt_url": "https://storage.example.com/outputs/subtitle/transcribe-001.srt",
+    "segments_url": "https://storage.example.com/outputs/text/transcribe-001.json"
+  },
+  "message": "success"
+}
+```
+
 **POST `/v1/media/generate/ass`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/media/generate/ass" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "media_url": "https://example.com/interview.mp4",
     "canvas_width": 1920,
@@ -290,6 +479,17 @@ curl -X POST "$BASE_URL/v1/media/generate/ass" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/media/generate/ass",
+  "code": 200,
+  "id": "ass-style-001",
+  "job_id": "e7a41a10-6b5a-4874-a66a-0a196ce8d6b3",
+  "response": "https://storage.example.com/outputs/subtitle/ass-style-001.ass",
+  "message": "success"
+}
+```
+
 ### 2.5 通用媒体处理
 
 | Endpoint | 功能摘要 | 常见玩法 |
@@ -301,14 +501,10 @@ curl -X POST "$BASE_URL/v1/media/generate/ass" \
 | [`/v1/media/silence`](media/silence.md) | 检测静音片段 | 自动找出剪辑点、生成 B-roll 切换节点 |
 | [`/v1/media/feedback`](media/feedback.md) | 生成带有 UI 的反馈页面 | 收集团队/客户对媒体的意见 |
 
-#### 对应 cURL 示例
-
 **POST `/v1/media/convert`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/media/convert" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "media_url": "https://example.com/source.mov",
     "format": "mp4",
@@ -319,12 +515,21 @@ curl -X POST "$BASE_URL/v1/media/convert" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/media/convert",
+  "code": 200,
+  "id": "convert-001",
+  "job_id": "b40f1137-6dcb-4b61-81a9-91c33e67d22a",
+  "response": "https://storage.example.com/outputs/video/convert-001.mp4",
+  "message": "success"
+}
+```
+
 **POST `/v1/media/convert/mp3`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/media/convert/mp3" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "media_url": "https://example.com/interview.mp4",
     "bitrate": "192k",
@@ -334,12 +539,21 @@ curl -X POST "$BASE_URL/v1/media/convert/mp3" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/media/transform/mp3",
+  "code": 200,
+  "id": "mp3-001",
+  "job_id": "de7c0f8f-9474-4d10-90e4-91ad7e35dfaf",
+  "response": "https://storage.example.com/outputs/audio/mp3-001.mp3",
+  "message": "success"
+}
+```
+
 **POST `/v1/BETA/media/download`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/BETA/media/download" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "media_url": "https://www.youtube.com/watch?v=VIDEO_ID",
     "cloud_upload": true,
@@ -348,24 +562,64 @@ curl -X POST "$BASE_URL/v1/BETA/media/download" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/BETA/media/download",
+  "code": 200,
+  "id": "download-001",
+  "job_id": "28d6bfbe-7d9b-46ed-984a-4a8ea2f669d1",
+  "response": {
+    "file_url": "https://storage.example.com/outputs/video/download-001.mp4",
+    "thumbnail_url": "https://storage.example.com/outputs/image/download-001.jpg",
+    "duration": 612.48,
+    "title": "Sample Video"
+  },
+  "message": "success"
+}
+```
+
 **POST `/v1/media/metadata`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/media/metadata" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "media_url": "https://example.com/source.mp4",
     "id": "metadata-001"
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/media/metadata",
+  "code": 200,
+  "id": "metadata-001",
+  "job_id": "ae3fcb5f-b93c-4d44-a1ff-2fa049b04d4a",
+  "response": {
+    "format": {
+      "duration": 59.97,
+      "filesize": 157829432,
+      "bitrate": 2100000
+    },
+    "video": {
+      "codec": "h264",
+      "width": 1920,
+      "height": 1080,
+      "fps": 29.97
+    },
+    "audio": {
+      "codec": "aac",
+      "channels": 2,
+      "sample_rate": 48000
+    }
+  },
+  "message": "success"
+}
+```
+
 **POST `/v1/media/silence`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/media/silence" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "media_url": "https://example.com/podcast.mp3",
     "duration": 0.5,
@@ -376,11 +630,27 @@ curl -X POST "$BASE_URL/v1/media/silence" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/media/silence",
+  "code": 200,
+  "id": "silence-001",
+  "job_id": "76a8a8b5-afa0-4b74-bf84-697d08d3c732",
+  "response": [
+    {"start": 12.624, "end": 13.309},
+    {"start": 58.451, "end": 60.002}
+  ],
+  "message": "success"
+}
+```
+
 **GET `/v1/media/feedback`**
 
 ```bash
 curl -L "$BASE_URL/v1/media/feedback"
 ```
+
+响应为 HTML 页面，浏览器打开后可直接进行媒体反馈标注。
 
 ### 2.6 云存储与交付
 
@@ -389,14 +659,10 @@ curl -L "$BASE_URL/v1/media/feedback"
 | [`/v1/s3/upload`](s3/upload.md) | 直接从 URL 上传到 S3 兼容存储 | 将处理结果推送到 COS/OSS/MinIO；自动化备份 |
 | `/gdrive-upload` | 将远程文件分块上传至 Google Drive（需要 `GDRIVE_USER` + `GCP_SA_CREDENTIALS`） | 与 Google Workspace 协同、产出物直接进团队盘 |
 
-#### 对应 cURL 示例
-
 **POST `/v1/s3/upload`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/s3/upload" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "file_url": "https://example.com/output.mp4",
     "filename": "campaign-final.mp4",
@@ -404,12 +670,25 @@ curl -X POST "$BASE_URL/v1/s3/upload" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/s3/upload",
+  "code": 200,
+  "job_id": "c8899c44-0f02-4fb1-b437-1ef7ae1ac84f",
+  "response": {
+    "file_url": "https://oss.example.com/campaign-final.mp4",
+    "bucket": "nca-toolkit",
+    "key": "campaign-final.mp4",
+    "public": true
+  },
+  "message": "success"
+}
+```
+
 **POST `/gdrive-upload`**
 
 ```bash
 curl -X POST "$BASE_URL/gdrive-upload" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "file_url": "https://example.com/output.mp4",
     "filename": "campaign-final.mp4",
@@ -420,6 +699,20 @@ curl -X POST "$BASE_URL/gdrive-upload" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/gdrive-upload",
+  "code": 200,
+  "id": "gdrive-001",
+  "job_id": "84dd8fa0-8e9d-4f16-8ef7-40dfc7d16df1",
+  "response": {
+    "file_id": "1r0xV2TgIaK9T3YJg5l9y5yL6uQmS0V7R",
+    "share_url": "https://drive.google.com/file/d/1r0xV2TgIaK9T3YJg5l9y5yL6uQmS0V7R/view"
+  },
+  "message": "success"
+}
+```
+
 ### 2.7 自动化工具箱
 
 | Endpoint | 功能摘要 | 常见玩法 |
@@ -427,16 +720,10 @@ curl -X POST "$BASE_URL/gdrive-upload" \
 | [`/v1/ffmpeg/compose`](ffmpeg/ffmpeg_compose.md) | 通过 JSON 描述任意 FFmpeg 流水线 | 高级媒体合成、批量模板渲染 |
 | [`/audio-mixing`](../routes/audio_mixing.py) | 远程混合视频原声与配乐并调节音量 | 制作旁白版视频、构建播客+配乐混音 |
 
-> `/audio-mixing` 尚无独立文档，功能由 `services/audio_mixing.py` 提供，支持 webhook、云端上传。
-
-#### 对应 cURL 示例
-
 **POST `/v1/ffmpeg/compose`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/ffmpeg/compose" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "inputs": [
       {
@@ -468,12 +755,27 @@ curl -X POST "$BASE_URL/v1/ffmpeg/compose" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/v1/ffmpeg/compose",
+  "code": 200,
+  "id": "ffmpeg-001",
+  "job_id": "8a9946a3-b2c8-43a2-9f80-dbf7b1b41d01",
+  "response": [
+    {
+      "file_url": "https://storage.example.com/outputs/video/ffmpeg-001.mp4",
+      "duration": 15.0,
+      "thumbnail_url": "https://storage.example.com/outputs/image/ffmpeg-001_thumbnail.jpg"
+    }
+  ],
+  "message": "success"
+}
+```
+
 **POST `/audio-mixing`**
 
 ```bash
 curl -X POST "$BASE_URL/audio-mixing" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "video_url": "https://example.com/raw-video.mp4",
     "audio_url": "https://example.com/voiceover.mp3",
@@ -485,6 +787,17 @@ curl -X POST "$BASE_URL/audio-mixing" \
   }'
 ```
 
+```json
+{
+  "endpoint": "/audio-mixing",
+  "code": 200,
+  "id": "audio-mix-001",
+  "job_id": "1fb3f244-44e1-4d8a-91c7-6690b27d1cf6",
+  "response": "https://storage.example.com/outputs/video/audio-mix-001.mp4",
+  "message": "success"
+}
+```
+
 ### 2.8 开发者与运维能力
 
 | Endpoint / 功能 | 功能摘要 | 常见玩法 |
@@ -493,14 +806,10 @@ curl -X POST "$BASE_URL/audio-mixing" \
 | 队列模式（`queue_task_wrapper`） | 无需自己管理后台任务队列，内置同步 / 异步 / Cloud Run 托管 | 避免请求超时、提升长任务稳定性 |
 | Webhook 回调 | 任意接口加入 `webhook_url` 即启用 | 与 n8n/Make/Zapier 整合，任务完成自动触发下一步 |
 
-#### 对应 cURL 示例
-
 **POST `/v1/code/execute/python`**
 
 ```bash
 curl -X POST "$BASE_URL/v1/code/execute/python" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
   -d '{
     "code": "print(\"Hello from Toolkit\")\nreturn 42",
     "timeout": 60,
@@ -508,42 +817,195 @@ curl -X POST "$BASE_URL/v1/code/execute/python" \
   }'
 ```
 
-> 队列模式与 Webhook 回调为框架特性，直接在任意任务请求体中附加 `webhook_url`、`id` 等字段即可，无需单独的接口调用。
+```json
+{
+  "endpoint": "/v1/code/execute/python",
+  "code": 200,
+  "id": "python-001",
+  "job_id": "f9b6f255-4f4a-4e39-a7d0-0931c88d1112",
+  "response": {
+    "result": 42,
+    "stdout": "Hello from Toolkit\n",
+    "stderr": "",
+    "exit_code": 0
+  },
+  "message": "success"
+}
+```
+
+> 队列模式与 Webhook 回调为框架特性，直接在任意任务请求体中附加 `webhook_url`、`id` 等字段即可，无需单独的接口调用。若未提供 `webhook_url`，同步响应即包含 `response` 数据。
 
 ---
 
-## 3. 自动化集成玩法
+## 3. 如何获取 OSS / 云端文件链接？
 
-1. **同步调用**：不携带 `webhook_url` 的请求会在同一 HTTP 响应中返回结果，适合 < 60 秒的快速处理。
-2. **内置异步队列**：携带 `webhook_url` 时立即返回 `202`，后台处理完成后推送 webhook。可通过 `/v1/toolkit/job/status` 轮询状态。
-3. **GCP Cloud Run Jobs**：设置 `GCP_JOB_NAME` + `GCP_JOB_LOCATION` 后，长任务会被转交给 Cloud Run Job 执行，实现无限时长的无服务器处理。
-4. **自定义回调数据**：任务请求体中的 `id` 会原样带入响应与 webhook，可用于在外部系统中做关联。
-5. **本地/容器化工作流**：结合 `docker-compose.local.minio.n8n.md` 中的 MinIO + n8n 示例，可在本地搭建端到端媒体自动化平台。
+1. **同步任务**：接口直接返回 `code: 200`，最终文件地址位于响应体 `response` 字段（可能是字符串 URL，或带 `file_url` 的对象/数组）。
+2. **异步任务（带 webhook）**：首次请求返回 `202 processing`，最终的 webhook 回调或 `/v1/toolkit/job/status` 查询结果中 `response` 字段即为上传成功后的 OSS/S3/GCS 链接。
+3. **S3 / OSS 上传接口**：返回值通常包含 `file_url`、`bucket`、`key` 等信息，直接使用 `file_url` 即可对外分发。如果配置为私有存储，可结合存储服务自身的签名规则生成临时访问链接。
 
 ---
 
-## 4. 组合玩法示例
+## 4. 组合玩法拆解
 
-1. **短视频字幕流水线**  
-   `/v1/media/media_transcribe` → `/v1/media/generate/ass` → `/v1/video/caption` → `/v1/s3/upload`  
-   自动完成转写、字幕样式生成、烧录与上传。
+以下示例展示完整流水线的调用顺序、请求示例与关键响应片段。
 
-2. **播客多平台分发**  
-   `/v1/media/convert`（统一格式） → `/v1/media/convert/mp3` → `/v1/media/metadata` → `/v1/s3/upload`  
-   产出平台标准音频并附带元数据，方便自动上架。
+### 4.1 短视频字幕流水线
 
-3. **网页到视频宣传素材**  
-   `/v1/image/screenshot/webpage` → `/v1/image/convert/video` → `/v1/video/thumbnail`  
-   将网页截图生成滚动视频，并配套封面图。
+目标：实现转写 → ASS 样式字幕 → 烧录字幕 → 上传至 OSS。
 
-4. **外部任务协同**  
-   任意媒体处理接口 + `webhook_url` 指向 n8n/Make → 接收结果后执行后续自动化（写入表格、推送 Slack、触发再加工任务）。
+1. **转写原始音视频** `/v1/media/transcribe`
+   - 请求 `response_type: "cloud"`，同时存储文字与字幕文件。
+   - 从结果中拿到 `text_url` 或 `srt_url`。
+
+2. **生成富样式 ASS 字幕** `/v1/media/generate/ass`
+   - 请求中引用上一步结果的 `media_url`（可为同一原视频），自定义字体、颜色、卡拉 OK 动效。
+   - 返回 `ASS` 文件 URL。
+
+3. **烧制字幕输出最终视频** `/v1/video/caption`
+   - 请求中带上 `video_url` 与 `ass`（可以直接放文件内容，或先下载后传入）。
+   - 返回烧制后的视频 URL。
+
+4. **上传第三方存储** `/v1/s3/upload`
+   - 将烧制后的视频 URL 直接推送到 OSS/COS/MinIO，获得最终可分享链接。
+
+每个步骤都可带 `webhook_url`，流水线中只需在收到 webhook 后把下一步的请求加入自动化工具（n8n/Make/Zapier）。
+
+### 4.2 播客多平台分发
+
+1. **统一格式** `/v1/media/convert` → 输出平台标准 MP4/MP3。
+2. **提取音频** `/v1/media/convert/mp3` → 生成播客音频。
+3. **补充元数据** `/v1/media/metadata` → 获取时长、码率等信息。
+4. **上传云存储** `/v1/s3/upload` → 最终用于 RSS 或平台分发。
+
+利用 `id` 字段在每一步追踪同一任务，最终组合为一份完整的音频包和指向 OSS 的下载链接。
+
+### 4.3 网页到视频宣传素材
+
+1. **截图网页** `/v1/image/screenshot/webpage` → 获得静态图。
+2. **图片变视频** `/v1/image/convert/video` → 做出带缓慢推拉的动效视频。
+3. **生成缩略图** `/v1/video/thumbnail` → 取视频中的关键帧作为封面。
+
+输出分别为：截图 PNG、动效 MP4、封面 PNG，可直接摆放到营销落地页或社交媒体素材库。
+
+### 4.4 外部任务协同
+
+1. 任意媒体处理接口（例如 `/v1/media/convert`）请求中携带 `webhook_url` 指向 n8n/Make/Zapier。
+2. n8n/Make 工作流收到 webhook 后读取 `response` 字段中的文件地址或文字结果。
+3. 后续步骤可以写入 Google Sheet、推送 Slack、调用自建 API、触发下一个视频处理任务等。
 
 ---
 
-## 5. 兼容保留接口（Legacy）
+## 5. 进阶玩法示例
 
-以下接口与 `v1` 版本提供相同或相似功能，主要用于兼容历史工作流。新项目推荐直接使用 `v1` 命名空间。
+### 5.1 移除视频开头重复帧
+
+利用 `/v1/ffmpeg/compose` 的 `filters` 参数调用 `mpdecimate` 与 `setpts`，可自动删除重复帧并重新对齐时间线。
+
+```bash
+curl -X POST "$BASE_URL/v1/ffmpeg/compose" \
+  -d '{
+    "inputs": [
+      {"file_url": "https://example.com/repeated-intro.mp4"}
+    ],
+    "filters": [
+      {"filter": "mpdecimate"},
+      {"filter": "setpts=N/FRAME_RATE/TB"}
+    ],
+    "outputs": [
+      {"options": [{"option": "-c:v", "argument": "libx264"}]}
+    ],
+    "webhook_url": "https://example.com/webhook",
+    "id": "dedupe-frames-001"
+  }'
+```
+
+最终响应：
+
+```json
+{
+  "endpoint": "/v1/ffmpeg/compose",
+  "code": 200,
+  "response": [
+    {
+      "file_url": "https://storage.example.com/outputs/video/dedupe-frames-001.mp4",
+      "duration": 43.2
+    }
+  ]
+}
+```
+
+### 5.2 字幕逐字打字机效果
+
+通过 `/v1/media/generate/ass` 的 `style: "word_by_word"` 配合 `position` 与 `max_words_per_line`，再用 `/v1/video/caption` 烧录即可实现逐字显示效果。
+
+```bash
+curl -X POST "$BASE_URL/v1/media/generate/ass" \
+  -d '{
+    "media_url": "https://example.com/voice.mp4",
+    "settings": {
+      "style": "word_by_word",
+      "font_family": "Source Han Sans",
+      "font_size": 64,
+      "word_color": "&H00FFFFFF",
+      "outline_color": "&H00404040",
+      "max_words_per_line": 1,
+      "position": "middle_center",
+      "shadow_offset": 3
+    },
+    "webhook_url": "https://example.com/webhook",
+    "id": "typewriter-sub-001"
+  }'
+```
+
+随后将生成的 `.ass` 文件传入 `/v1/video/caption`：
+
+```bash
+curl -X POST "$BASE_URL/v1/video/caption" \
+  -d '{
+    "video_url": "https://example.com/voice.mp4",
+    "ass": "https://storage.example.com/outputs/subtitle/typewriter-sub-001.ass",
+    "webhook_url": "https://example.com/webhook",
+    "id": "typewriter-sub-burn-001"
+  }'
+```
+
+回调示例：
+
+```json
+{
+  "endpoint": "/v1/video/caption",
+  "code": 200,
+  "response": "https://storage.example.com/outputs/video/typewriter-sub-burn-001.mp4"
+}
+```
+
+### 5.3 精准居中、动效字幕模板
+
+结合 `/v1/ffmpeg/compose` 的 `drawtext` 过滤器和 `/v1/media/generate/ass`，可以自定义字幕位置、动画、背景毛玻璃等效果。示例：
+
+```bash
+curl -X POST "$BASE_URL/v1/ffmpeg/compose" \
+  -d '{
+    "inputs": [
+      {"file_url": "https://example.com/clip.mp4"},
+      {"file_url": "https://storage.example.com/outputs/subtitle/typewriter-sub-001.ass",
+       "options": [{"option": "-vf", "argument": "ass"}]}
+    ],
+    "outputs": [
+      {"options": [{"option": "-c:v", "argument": "libx264"}]}
+    ],
+    "webhook_url": "https://example.com/webhook",
+    "id": "advanced-caption-001"
+  }'
+```
+
+### 5.4 多轨音视频打包
+
+通过 `/audio-mixing` + `/v1/media/metadata` 可得到多轨合成后的视频与详尽的编码参数，便于上传到第三方平台要求的规格。
+
+---
+
+## 6. Legacy 接口（兼容保留）
 
 | Endpoint | 功能摘要 | 推荐替代 |
 | --- | --- | --- |
@@ -555,111 +1017,11 @@ curl -X POST "$BASE_URL/v1/code/execute/python" \
 | `/transcribe-media` | 音视频转写 | [`/v1/media/media_transcribe`](media/media_transcribe.md) |
 | `/authenticate` (GET) | 校验 API Key | [`/v1/toolkit/authenticate`](toolkit/authenticate.md) |
 
-#### 对应 cURL 示例（Legacy）
-
-**POST `/caption-video`**
-
-```bash
-curl -X POST "$BASE_URL/caption-video" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
-  -d '{
-    "video_url": "https://example.com/source.mp4",
-    "srt": "1\\n00:00:00,000 --> 00:00:03,000\\nHello world!\\n",
-    "options": [
-      {"option": "-vf", "value": "scale=1080:-2"}
-    ],
-    "webhook_url": "https://example.com/webhook",
-    "id": "legacy-caption-001"
-  }'
-```
-
-**POST `/combine-videos`**
-
-```bash
-curl -X POST "$BASE_URL/combine-videos" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
-  -d '{
-    "video_urls": [
-      {"video_url": "https://example.com/clip1.mp4"},
-      {"video_url": "https://example.com/clip2.mp4"}
-    ],
-    "webhook_url": "https://example.com/webhook",
-    "id": "legacy-combine-001"
-  }'
-```
-
-**POST `/extract-keyframes`**
-
-```bash
-curl -X POST "$BASE_URL/extract-keyframes" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
-  -d '{
-    "video_url": "https://example.com/source.mp4",
-    "webhook_url": "https://example.com/webhook",
-    "id": "legacy-keyframes-001"
-  }'
-```
-
-**POST `/image-to-video`**
-
-```bash
-curl -X POST "$BASE_URL/image-to-video" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
-  -d '{
-    "image_url": "https://example.com/poster.jpg",
-    "length": 6,
-    "frame_rate": 30,
-    "zoom_speed": 4,
-    "webhook_url": "https://example.com/webhook",
-    "id": "legacy-image-video-001"
-  }'
-```
-
-**POST `/media-to-mp3`**
-
-```bash
-curl -X POST "$BASE_URL/media-to-mp3" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
-  -d '{
-    "media_url": "https://example.com/interview.mp4",
-    "bitrate": "160k",
-    "webhook_url": "https://example.com/webhook",
-    "id": "legacy-mp3-001"
-  }'
-```
-
-**POST `/transcribe-media`**
-
-```bash
-curl -X POST "$BASE_URL/transcribe-media" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
-  -d '{
-    "media_url": "https://example.com/interview.mp4",
-    "output": "srt",
-    "max_chars": 56,
-    "webhook_url": "https://example.com/webhook",
-    "id": "legacy-transcribe-001"
-  }'
-```
-
-**GET `/authenticate`**
-
-```bash
-curl -X GET "$BASE_URL/authenticate" \
-  -H "X-API-Key: $API_KEY"
-```
-
-> 兼容接口同样支持 `webhook_url`、`id` 等参数，返回结构也遵循队列包装后的统一格式。
+> 兼容接口的响应结构与 v1 版本一致，依旧支持 `webhook_url` 与 `id` 字段。
 
 ---
 
-## 6. 参考资料与下一步
+## 7. 参考资料与下一步
 
 - [更详细的接口文档目录](../README.md#api-endpoints)
 - [开发者指南：如何新增路由](adding_routes.md)
