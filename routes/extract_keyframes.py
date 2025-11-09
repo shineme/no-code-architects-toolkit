@@ -33,7 +33,8 @@ logger = logging.getLogger(__name__)
     "properties": {
         "video_url": {"type": "string", "format": "uri"},
         "webhook_url": {"type": "string", "format": "uri"},
-        "id": {"type": "string"}
+        "id": {"type": "string"},
+    "public": {"type": "boolean"}
     },
     "required": ["video_url"],
     "additionalProperties": False

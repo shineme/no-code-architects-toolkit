@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
         "media_url": {"type": "string", "format": "uri"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
+        "public": {"type": "boolean"},
         "cookie": {"type": "string", "description": "Path to cookie file, URL to cookie file, or cookie string in Netscape format"},
         "cloud_upload": {"type": "boolean"},
         "format": {

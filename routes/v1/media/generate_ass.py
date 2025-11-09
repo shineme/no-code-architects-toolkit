@@ -54,10 +54,10 @@ logger = logging.getLogger(__name__)
                 "spacing": {"type": "integer"},
                 "angle": {"type": "integer"},
                 "shadow_offset": {"type": "integer"}
-            },
-            "additionalProperties": False
-        },
-        "replace": {
+                },
+                "additionalProperties": False
+                },
+                "replace": {
             "type": "array",
             "items": {
                 "type": "object",
@@ -82,10 +82,11 @@ logger = logging.getLogger(__name__)
         },
         "language": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
-        "id": {"type": "string"}
+        "id": {"type": "string"},
+        "public": {"type": "boolean"}
     },
-    "additionalProperties": False,
     "required": ["media_url"],
+    "additionalProperties": False,
     "oneOf": [
         { "required": ["canvas_width", "canvas_height"] },
         { "not": { "anyOf": [ { "required": ["canvas_width"] }, { "required": ["canvas_height"] } ] } }
