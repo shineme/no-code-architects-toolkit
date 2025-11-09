@@ -38,7 +38,8 @@ logger = logging.getLogger(__name__)
         "audio_codec": {"type": "string"},
         "audio_bitrate": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
-        "id": {"type": "string"}
+        "id": {"type": "string"},
+    "public": {"type": "boolean"}
     },
     "required": ["media_url", "format"],
     "additionalProperties": False

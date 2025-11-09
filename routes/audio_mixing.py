@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
         "audio_vol": {"type": "number", "minimum": 0, "maximum": 100},
         "output_length": {"type": "string", "enum": ["video", "audio"]},
         "webhook_url": {"type": "string", "format": "uri"},
-        "id": {"type": "string"}
+        "id": {"type": "string"},
+    "public": {"type": "boolean"}
     },
     "required": ["video_url", "audio_url"],
     "additionalProperties": False

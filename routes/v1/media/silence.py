@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
         "duration": {"type": "number", "minimum": 0.1},
         "mono": {"type": "boolean"},
         "webhook_url": {"type": "string", "format": "uri"},
-        "id": {"type": "string"}
+        "id": {"type": "string"},
+    "public": {"type": "boolean"}
     },
     "required": ["media_url", "duration"],
     "additionalProperties": False

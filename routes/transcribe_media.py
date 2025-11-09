@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
         "output": {"type": "string", "enum": ["transcript", "srt", "vtt", "ass"]},
         "webhook_url": {"type": "string", "format": "uri"},
         "max_chars": {"type": "integer"},
-        "id": {"type": "string"}
+        "id": {"type": "string"},
+    "public": {"type": "boolean"}
     },
     "required": ["media_url"],
     "additionalProperties": False

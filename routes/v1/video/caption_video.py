@@ -71,9 +71,9 @@ logger = logging.getLogger(__name__)
                 "spacing": {"type": "integer"},
                 "angle": {"type": "integer"},
                 "shadow_offset": {"type": "integer"}
-            },
-            "additionalProperties": False
-        },
+                },
+                "additionalProperties": False
+                },
         "replace": {
             "type": "array",
             "items": {
@@ -99,7 +99,8 @@ logger = logging.getLogger(__name__)
         },
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
-        "language": {"type": "string"}
+        "language": {"type": "string"},
+        "public": {"type": "boolean"}
     },
     "required": ["video_url"],
     "additionalProperties": False

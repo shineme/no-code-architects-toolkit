@@ -59,8 +59,9 @@ logger = logging.getLogger(__name__)
                     "value": {"type": "string"},
                     "domain": {"type": "string"},
                     "path": {"type": "string", "default": "/"},
-                },
-                "additionalProperties": True
+                    "public": {"type": "boolean"}
+    },
+    "additionalProperties": True
             }
         },
         "headers": {

@@ -35,7 +35,8 @@ v1_media_metadata_bp = Blueprint('v1_media_metadata', __name__)
     "properties": {
         "media_url": {"type": "string", "format": "uri"},
         "webhook_url": {"type": "string", "format": "uri"},
-        "id": {"type": "string"}
+        "id": {"type": "string"},
+    "public": {"type": "boolean"}
     },
     "required": ["media_url"],
     "additionalProperties": False

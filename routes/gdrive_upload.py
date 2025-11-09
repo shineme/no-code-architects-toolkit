@@ -170,7 +170,8 @@ def upload_file_in_chunks(file_url, upload_url, total_size, job_id, chunk_size):
         "mime_type": {"type": "string"},
         "chunk_size": {"type": "integer", "minimum": 1},
         "webhook_url": {"type": "string", "format": "uri"},
-        "id": {"type": "string"}
+        "id": {"type": "string"},
+    "public": {"type": "boolean"}
     },
     "required": ["file_url", "filename", "folder_id"],
     "additionalProperties": False

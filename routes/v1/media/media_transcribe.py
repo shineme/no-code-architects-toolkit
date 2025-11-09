@@ -42,7 +42,8 @@ logger = logging.getLogger(__name__)
         "language": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
-        "words_per_line": {"type": "integer", "minimum": 1}
+        "words_per_line": {"type": "integer", "minimum": 1},
+        "public": {"type": "boolean"}
     },
     "required": ["media_url"],
     "additionalProperties": False
