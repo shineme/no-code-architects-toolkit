@@ -352,8 +352,8 @@ docker compose down -v
 # 更新系统
 sudo apt-get update && sudo apt-get upgrade -y
 
-# 安装Python 3.9+
-sudo apt-get install -y python3.9 python3.9-pip python3.9-dev python3.9-venv
+# 安装Python 3.11+
+sudo apt-get install -y python3.11 python3.11-pip python3.11-dev python3.11-venv
 
 # 安装构建工具
 sudo apt-get install -y build-essential wget git curl \
@@ -493,7 +493,7 @@ git clone https://github.com/stephengpope/no-code-architects-toolkit.git
 cd no-code-architects-toolkit
 
 # 创建Python虚拟环境
-python3.9 -m venv venv
+python3.11 -m venv venv
 source venv/bin/activate
 
 # 升级pip
