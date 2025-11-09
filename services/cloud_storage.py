@@ -58,6 +58,7 @@ class S3CompatibleProvider(CloudStorageProvider):
         self.secret_key = os.getenv('S3_SECRET_KEY')
         self.bucket_name = os.environ.get('S3_BUCKET_NAME', '')
         self.region = os.environ.get('S3_REGION', '')
+        self.public_url = os.environ.get('S3_PUBLIC_URL', '')
         
         # Check if endpoint is Digital Ocean and bucket name or region is missing
         if (self.endpoint_url and 
@@ -84,7 +85,7 @@ class S3CompatibleProvider(CloudStorageProvider):
                 logger.warning(f"Failed to parse Digital Ocean URL: {e}. Using provided values.")
 
     def upload_file(self, file_path: str) -> str:
-        return upload_to_s3(file_path, self.endpoint_url, self.access_key, self.secret_key, self.bucket_name, self.region)
+        return upload_to_s3(file_path, self.endpoint_url, self.access_key, self.secret_key, self.bucket_name, self.region, self.public_url)
 
 def get_storage_provider() -> CloudStorageProvider:
     
