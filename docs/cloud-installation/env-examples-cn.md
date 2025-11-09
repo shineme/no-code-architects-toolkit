@@ -49,8 +49,9 @@ LOCAL_STORAGE_PATH=/tmp
 
 API_KEY=your_secure_random_api_key
 
-# 使用内网endpoint
+# 使用内网endpoint上传，公网URL访问
 S3_ENDPOINT_URL=https://cos.ap-guangzhou.tencentcos.cn
+S3_PUBLIC_URL=https://cos.ap-guangzhou.myqcloud.com
 S3_ACCESS_KEY=YOUR_TENCENT_SECRET_ID_HERE
 S3_SECRET_KEY=YOUR_SECRET_KEY_HERE
 S3_BUCKET_NAME=your-bucket-name-1234567890
@@ -60,6 +61,8 @@ GUNICORN_WORKERS=4
 GUNICORN_TIMEOUT=300
 MAX_QUEUE_LENGTH=10
 ```
+
+**说明**: 通过内网endpoint上传可以节省流量费用，同时通过S3_PUBLIC_URL设置公网访问地址，确保返回的文件URL可以被外部访问。
 
 ### 腾讯云COS地域列表
 
@@ -116,8 +119,9 @@ LOCAL_STORAGE_PATH=/tmp
 
 API_KEY=your_secure_random_api_key
 
-# 使用内网endpoint
+# 使用内网endpoint上传，公网URL访问
 S3_ENDPOINT_URL=https://oss-cn-hangzhou-internal.aliyuncs.com
+S3_PUBLIC_URL=https://oss-cn-hangzhou.aliyuncs.com
 S3_ACCESS_KEY=YOUR_ALIYUN_ACCESS_KEY_ID
 S3_SECRET_KEY=YOUR_SECRET_KEY_HERE
 S3_BUCKET_NAME=your-bucket-name
@@ -127,6 +131,8 @@ GUNICORN_WORKERS=4
 GUNICORN_TIMEOUT=300
 MAX_QUEUE_LENGTH=10
 ```
+
+**说明**: 通过内网endpoint上传可以节省流量费用，同时通过S3_PUBLIC_URL设置公网访问地址，确保返回的文件URL可以被外部访问。
 
 ### 阿里云OSS地域列表
 
@@ -477,6 +483,9 @@ volumes:
 | `S3_SECRET_KEY` | 访问密钥Secret | `xxx...` |
 | `S3_BUCKET_NAME` | 存储桶名称 | `bucket-name-appid` |
 | `S3_REGION` | 地域 | `ap-guangzhou` 或 `oss-cn-hangzhou` |
+| `S3_PUBLIC_URL` | 公共访问URL（可选） | `https://cdn.example.com` |
+
+**注意**: `S3_PUBLIC_URL` 用于指定文件的公共访问URL基础路径。当公共访问URL与S3_ENDPOINT_URL不同时使用（例如使用CDN、自定义域名或内网上传时）。如不设置则默认使用 S3_ENDPOINT_URL。
 
 #### 选项2: Google Cloud Storage
 

@@ -161,6 +161,7 @@ S3-Compatible:
 - `S3_SECRET_KEY` - Secret key
 - `S3_BUCKET_NAME` - Bucket name
 - `S3_REGION` - Region (or "None" for some providers)
+- `S3_PUBLIC_URL` - Public URL base for file access (optional, defaults to S3_ENDPOINT_URL if not set)
 
 **Optional:**
 - `LOCAL_STORAGE_PATH` - Temp file storage (default: /tmp)

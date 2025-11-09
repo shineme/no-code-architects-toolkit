@@ -166,6 +166,11 @@ Each endpoint is supported by robust payload validation and detailed API documen
 - **Purpose**: The region for the S3-compatible storage service.
 - **Requirement**: Mandatory if using S3-compatible storage, "None" is acceptible for some s3 providers.
 
+#### `S3_PUBLIC_URL`
+- **Purpose**: The public URL base for accessing uploaded files. Use this when the public access URL is different from the S3_ENDPOINT_URL (e.g., when using a CDN, custom domain, or when the endpoint URL is an internal/private address).
+- **Requirement**: Optional. If not set, S3_ENDPOINT_URL will be used to construct public URLs.
+- **Example**: If files should be accessed via `https://cdn.example.com` but uploaded to `https://s3.internal.example.com`, set S3_PUBLIC_URL to `https://cdn.example.com`.
+
 ---
 
 ### Google Cloud Storage (GCP) Environment Variables
@@ -227,6 +232,7 @@ Each endpoint is supported by robust payload validation and detailed API documen
      #-e S3_SECRET_KEY=your_secret_key \
      #-e S3_BUCKET_NAME=your_bucket_name \
      #-e S3_REGION=nyc3 \
+     #-e S3_PUBLIC_URL=https://cdn.yourdomain.com \  # Optional: for CDN or custom domain
 
      # Or
 
