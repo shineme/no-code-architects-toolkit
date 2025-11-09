@@ -43,9 +43,11 @@ def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region,
         # URL encode the filename for the URL
         encoded_filename = quote(os.path.basename(file_path))
         
-        # Use public URL if provided, otherwise fall back to endpoint URL
-        base_url = public_url if public_url else s3_url
-        file_url = f"{base_url}/{bucket_name}/{encoded_filename}"
+        # Use public URL if provided, otherwise fall back to endpoint URL with bucket prefix
+        if public_url:
+            file_url = f"{public_url}/{encoded_filename}"
+        else:
+            file_url = f"{s3_url}/{bucket_name}/{encoded_filename}"
         return file_url
     except Exception as e:
         logger.error(f"Error uploading file to S3: {e}")
